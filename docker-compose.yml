@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis:15-3.3
+    environment:
+      POSTGRES_USER: mrv_user
+      POSTGRES_PASSWORD: mrv_password
+      POSTGRES_DB: bluecarbon
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://mrv_user:mrv_password@db:5432/bluecarbon
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    image: node:20
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+    command: npm run dev
+
+volumes:
+  postgres_data:
