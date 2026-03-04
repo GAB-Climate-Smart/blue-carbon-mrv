@@ -2,3 +2,16 @@
 gh
 gh_*
 supabase_status.txt
+
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+
+# Env
+.env.supabase
+.env
+
+# IDE
+.vscode/
+

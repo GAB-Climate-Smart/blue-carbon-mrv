@@ -9,6 +9,7 @@ export function Sidebar({ userRole = 'crema_agent' }: { userRole?: string }) {
 
     const navItems = [
         { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+        { name: "Maps & Polygons", href: "/maps", icon: MapIcon },
         { name: "Alerts", href: "/alerts", icon: AlertCircle },
         { name: "Plots", href: "/plots", icon: TreePine },
         { name: "Soil Lab", href: "/soil", icon: Microscope },
