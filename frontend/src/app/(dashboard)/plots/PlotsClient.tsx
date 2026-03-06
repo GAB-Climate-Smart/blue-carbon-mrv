@@ -4,10 +4,10 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { TreePine, Activity, Navigation } from "lucide-react";
-import { ProjectFilter } from "@/components/ProjectFilter";
+import { ProjectFilter, useProjectSelection } from "@/components/ProjectFilter";
 
 export default function PlotsClient({ projects, plots }: { projects: any[]; plots: any[] }) {
-    const [selectedProjectId, setSelectedProjectId] = useState("all");
+    const [selectedProjectId, setSelectedProjectId] = useProjectSelection("all");
 
     const filtered = useMemo(() => {
         const list = selectedProjectId === "all" ? plots : plots.filter((p: any) => p.project_id === selectedProjectId);

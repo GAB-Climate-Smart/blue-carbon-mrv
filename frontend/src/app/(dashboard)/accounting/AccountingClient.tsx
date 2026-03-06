@@ -4,12 +4,12 @@ import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import Link from "next/link";
 import { Calculator, Factory, ShieldAlert, BadgeCheck, Activity, Lock, ArrowRight, DollarSign } from "lucide-react";
-import { ProjectFilter } from "@/components/ProjectFilter";
+import { ProjectFilter, useProjectSelection } from "@/components/ProjectFilter";
 
 export default function AccountingClient({ projects, calculations, activeCycleName, pendingRequirements }: {
     projects: any[]; calculations: any[]; activeCycleName: string | null; pendingRequirements: number;
 }) {
-    const [selectedProjectId, setSelectedProjectId] = useState("all");
+    const [selectedProjectId, setSelectedProjectId] = useProjectSelection("all");
 
     const isLocked = pendingRequirements > 0;
 

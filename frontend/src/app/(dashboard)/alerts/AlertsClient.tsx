@@ -4,10 +4,10 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Activity, AlertTriangle, ShieldCheck } from "lucide-react";
-import { ProjectFilter } from "@/components/ProjectFilter";
+import { ProjectFilter, useProjectSelection } from "@/components/ProjectFilter";
 
 export default function AlertsClient({ projects, alerts }: { projects: any[]; alerts: any[] }) {
-    const [selectedProjectId, setSelectedProjectId] = useState("all");
+    const [selectedProjectId, setSelectedProjectId] = useProjectSelection("all");
 
     const filtered = useMemo(() => {
         if (selectedProjectId === "all") return alerts;

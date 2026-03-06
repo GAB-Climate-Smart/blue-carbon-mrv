@@ -65,3 +65,22 @@ export function useProjects() {
 
     return { projects, selectedProjectId, setSelectedProjectId, loading };
 }
+
+export function useProjectSelection(defaultVal = "all") {
+    const [selectedProjectId, setSelectedProjectId] = useState(() => {
+        if (typeof window !== "undefined") {
+            const saved = localStorage.getItem("bluecarbon_project_id");
+            // Also checking if the user had it set to empty or something invalid
+            return saved !== null ? saved : defaultVal;
+        }
+        return defaultVal;
+    });
+
+    useEffect(() => {
+        if (selectedProjectId && typeof window !== "undefined") {
+            localStorage.setItem("bluecarbon_project_id", selectedProjectId);
+        }
+    }, [selectedProjectId]);
+
+    return [selectedProjectId, setSelectedProjectId] as const;
+}

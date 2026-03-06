@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import { format } from "date-fns";
 import { CheckCircle2, Circle, ShieldCheck, AlertCircle, FileText, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { ProjectFilter } from "@/components/ProjectFilter";
+import { ProjectFilter, useProjectSelection } from "@/components/ProjectFilter";
 
 type MonitoringCycle = {
     id: string;
@@ -37,7 +37,7 @@ export default function ComplianceManager({ cycles, initialChecklists, isAdmin, 
     const supabase = createClient();
     const [selectedCycleId, setSelectedCycleId] = useState<string>(cycles.length > 0 ? cycles[0].id : "");
     const [checklists, setChecklists] = useState<ChecklistItem[]>(initialChecklists);
-    const [selectedProjectId, setSelectedProjectId] = useState("all");
+    const [selectedProjectId, setSelectedProjectId] = useProjectSelection("all");
     const [isVerifying, setIsVerifying] = useState(false);
 
     const activeCycle = useMemo(() => cycles.find(c => c.id === selectedCycleId), [cycles, selectedCycleId]);

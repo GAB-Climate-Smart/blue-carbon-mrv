@@ -3,10 +3,11 @@
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { Microscope, Beaker, Clock, CheckCircle2, AlertCircle } from "lucide-react";
-import { ProjectFilter } from "@/components/ProjectFilter";
+import { ProjectFilter, useProjectSelection } from "@/components/ProjectFilter";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 
 export default function SoilClient({ projects, samples }: { projects: any[]; samples: any[] }) {
-    const [selectedProjectId, setSelectedProjectId] = useState("all");
+    const [selectedProjectId, setSelectedProjectId] = useProjectSelection("all");
 
     const filtered = useMemo(() => {
         if (selectedProjectId === "all") return samples;
@@ -20,6 +21,18 @@ export default function SoilClient({ projects, samples }: { projects: any[]; sam
     const totalSamples = filtered.length;
     const pendingAnalysis = filtered.filter((s: any) => s.analysis_status === 'Pending').length;
     const completedAnalysis = filtered.filter((s: any) => s.analysis_status === 'Analysed').length;
+
+    const chartData = useMemo(() => {
+        return filtered
+            .filter((s: any) => typeof s.organic_carbon_percent === 'number' || typeof s.organic_carbon_percent === 'string')
+            .map((s: any) => ({
+                id: s.sample_id,
+                depth: s.depth_interval,
+                carbon: Number(s.organic_carbon_percent) || 0,
+                density: Number(s.bulk_density_g_cm3) || 0,
+                plot: s.sample_plots?.plot_name || 'Unknown'
+            })).sort((a: any, b: any) => a.depth.localeCompare(b.depth));
+    }, [filtered]);
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
@@ -45,6 +58,50 @@ export default function SoilClient({ projects, samples }: { projects: any[]; sam
                     <div className="text-3xl font-bold text-white">{completedAnalysis}</div>
                 </div>
             </div>
+
+            {chartData.length > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                        <h3 className="text-white font-medium mb-4">Organic Carbon by Depth</h3>
+                        <div className="h-[250px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                    <XAxis dataKey="depth" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc', borderRadius: '8px' }}
+                                        itemStyle={{ color: '#10b981' }}
+                                        formatter={(value: number) => [`${value.toFixed(2)}%`, 'Carbon']}
+                                        labelFormatter={(label) => `Depth: ${label}`}
+                                    />
+                                    <Bar dataKey="carbon" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                        <h3 className="text-white font-medium mb-4">Bulk Density Overview</h3>
+                        <div className="h-[250px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                    <XAxis dataKey="id" stroke="#94a3b8" fontSize={10} tick={false} axisLine={false} />
+                                    <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} domain={[0, 'dataMax + 0.5']} />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc', borderRadius: '8px' }}
+                                        itemStyle={{ color: '#eab308' }}
+                                        formatter={(value: number) => [`${value.toFixed(3)} g/cm³`, 'Density']}
+                                        labelStyle={{ color: '#94a3b8', marginBottom: '4px' }}
+                                    />
+                                    <Bar dataKey="density" fill="#eab308" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
                 <div className="overflow-x-auto">

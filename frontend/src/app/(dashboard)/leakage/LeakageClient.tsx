@@ -3,12 +3,12 @@
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { ShieldAlert, Anchor, TrendingUp, FireExtinguisher, MapPin, AlertTriangle } from "lucide-react";
-import { ProjectFilter } from "@/components/ProjectFilter";
+import { ProjectFilter, useProjectSelection } from "@/components/ProjectFilter";
 
 export default function LeakageClient({ projects, riskScores, reversals, surveys, calcAggs }: {
     projects: any[]; riskScores: any[]; reversals: any[]; surveys: any[]; calcAggs: any[];
 }) {
-    const [selectedProjectId, setSelectedProjectId] = useState("all");
+    const [selectedProjectId, setSelectedProjectId] = useProjectSelection("all");
 
     const filtered = useMemo(() => {
         if (selectedProjectId === "all") return { riskScore: riskScores[0], reversals, surveys, calcAggs };

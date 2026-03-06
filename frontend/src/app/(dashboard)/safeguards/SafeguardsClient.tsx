@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { HeartHandshake, FileText, Users, AlertCircle, CheckCircle2, MessageSquare, Download } from "lucide-react";
 import { format } from "date-fns";
-import { ProjectFilter } from "@/components/ProjectFilter";
+import { ProjectFilter, useProjectSelection } from "@/components/ProjectFilter";
 
 interface SafeguardsClientProps {
     projects: any[];
@@ -12,7 +12,7 @@ interface SafeguardsClientProps {
 }
 
 export default function SafeguardsClient({ projects, grievances, documents }: SafeguardsClientProps) {
-    const [selectedProjectId, setSelectedProjectId] = useState("all");
+    const [selectedProjectId, setSelectedProjectId] = useProjectSelection("all");
 
     const filtered = useMemo(() => {
         if (selectedProjectId === "all") return { grievances, documents };
