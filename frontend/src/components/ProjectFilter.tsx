@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ChevronDown, Globe } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 interface ProjectOption {
     id: string;
@@ -54,7 +55,7 @@ export function useProjects() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch("http://127.0.0.1:8000/api/v1/projects/")
+        fetch(`${API_BASE_URL}/api/v1/projects/`)
             .then((res) => res.json())
             .then((data) => {
                 setProjects(data);

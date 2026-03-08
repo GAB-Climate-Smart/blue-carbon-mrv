@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { UploadCloud, CheckCircle2, Loader2, X } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 const AREA_TYPE_OPTIONS = [
     { value: "project_boundary", label: "Project Boundary" },
@@ -39,7 +40,7 @@ export default function PolygonUpload() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch("http://127.0.0.1:8000/api/v1/projects/")
+        fetch(`${API_BASE_URL}/api/v1/projects/`)
             .then(res => res.json())
             .then(data => {
                 setProjects(data);
@@ -88,7 +89,7 @@ export default function PolygonUpload() {
         }
 
         try {
-            const res = await fetch("http://127.0.0.1:8000/api/v1/uploads/spatial", {
+            const res = await fetch(`${API_BASE_URL}/api/v1/uploads/spatial`, {
                 method: "POST",
                 body: formData,
             });
