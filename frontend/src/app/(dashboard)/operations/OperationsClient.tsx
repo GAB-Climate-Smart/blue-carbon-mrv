@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { Activity, CheckCircle, Clock, Database, FileText, Search, ShieldAlert, SlidersHorizontal, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/lib/api";
 
 interface Job {
     id: string;
@@ -61,7 +62,7 @@ export default function OperationsClient({ projects, initialJobs, initialRuns }:
 
     const handleJobAction = async (jobId: string, action: "approved" | "rejected") => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/v1/governance/ingestion-jobs/${jobId}/status`, {
+            const res = await fetch(`${API_BASE_URL}/api/v1/governance/ingestion-jobs/${jobId}/status`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ status: action })

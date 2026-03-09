@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { UploadCloud, CheckCircle2, Loader2, X, MapPin, Calendar, Globe, Map as MapIcon, ArrowRight, ArrowLeft, AlertCircle, Layers, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { API_BASE_URL } from "@/lib/api";
 
 const AREA_TYPE_OPTIONS = [
     { value: "project_boundary", label: "Project Boundary (outermost perimeter)" },
@@ -51,7 +52,7 @@ export default function ProjectWizard() {
     const [existingProjects, setExistingProjects] = useState<ProjectOption[]>([]);
 
     useEffect(() => {
-        fetch("http://127.0.0.1:8000/api/v1/projects/")
+        fetch(`${API_BASE_URL}/api/v1/projects/`)
             .then(res => res.json())
             .then(data => setExistingProjects(data))
             .catch(() => { });
@@ -84,7 +85,7 @@ export default function ProjectWizard() {
         setError(null);
 
         try {
-            const res = await fetch("http://127.0.0.1:8000/api/v1/projects/", {
+            const res = await fetch(`${API_BASE_URL}/api/v1/projects/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -131,7 +132,7 @@ export default function ProjectWizard() {
             formData.append("area_type", areaType);
             formData.append("project_id", createdProjectId);
 
-            const res = await fetch("http://127.0.0.1:8000/api/v1/uploads/spatial", {
+            const res = await fetch(`${API_BASE_URL}/api/v1/uploads/spatial`, {
                 method: "POST",
                 body: formData,
             });
