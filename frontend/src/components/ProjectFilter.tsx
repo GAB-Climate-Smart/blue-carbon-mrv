@@ -9,6 +9,8 @@ interface ProjectOption {
     region: string;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
 interface ProjectFilterProps {
     selectedProjectId: string;
     onProjectChange: (projectId: string) => void;
@@ -54,7 +56,7 @@ export function useProjects() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch("http://127.0.0.1:8000/api/v1/projects/")
+        fetch(`${API_URL}/api/v1/projects/`)
             .then((res) => res.json())
             .then((data) => {
                 setProjects(data);

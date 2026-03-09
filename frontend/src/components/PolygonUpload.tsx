@@ -18,6 +18,8 @@ interface ProjectOption {
     name: string;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
 export default function PolygonUpload() {
     const [file, setFile] = useState<File | null>(null);
     const [areaType, setAreaType] = useState("restoration");
@@ -33,7 +35,7 @@ export default function PolygonUpload() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch("http://127.0.0.1:8000/api/v1/projects/")
+        fetch(`${API_URL}/api/v1/projects/`)
             .then(res => res.json())
             .then(data => {
                 setProjects(data);
@@ -76,7 +78,7 @@ export default function PolygonUpload() {
         formData.append("project_id", projectId);
 
         try {
-            const res = await fetch("http://127.0.0.1:8000/api/v1/uploads/spatial", {
+            const res = await fetch(`${API_URL}/api/v1/uploads/spatial`, {
                 method: "POST",
                 body: formData,
             });

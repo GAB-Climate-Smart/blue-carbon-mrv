@@ -72,7 +72,7 @@ export default function SoilClient({ projects, samples }: { projects: any[]; sam
                                     <Tooltip
                                         contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc', borderRadius: '8px' }}
                                         itemStyle={{ color: '#10b981' }}
-                                        formatter={(value: number) => [`${value.toFixed(2)}%`, 'Carbon']}
+                                        formatter={(value: string | number | readonly (string | number)[] | undefined) => [typeof value === 'number' ? `${value.toFixed(2)}%` : `${value}`, 'Carbon']}
                                         labelFormatter={(label) => `Depth: ${label}`}
                                     />
                                     <Bar dataKey="carbon" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={50} />
@@ -92,7 +92,7 @@ export default function SoilClient({ projects, samples }: { projects: any[]; sam
                                     <Tooltip
                                         contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc', borderRadius: '8px' }}
                                         itemStyle={{ color: '#eab308' }}
-                                        formatter={(value: number) => [`${value.toFixed(3)} g/cm³`, 'Density']}
+                                        formatter={(value: string | number | readonly (string | number)[] | undefined) => [typeof value === 'number' ? `${value.toFixed(3)} g/cm³` : `${value}`, 'Density']}
                                         labelStyle={{ color: '#94a3b8', marginBottom: '4px' }}
                                     />
                                     <Bar dataKey="density" fill="#eab308" radius={[4, 4, 0, 0]} maxBarSize={50} />
