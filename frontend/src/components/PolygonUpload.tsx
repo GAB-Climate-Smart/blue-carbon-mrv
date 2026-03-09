@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { UploadCloud, CheckCircle2, Loader2, X } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 const AREA_TYPE_OPTIONS = [
     { value: "project_boundary", label: "Project Boundary" },
@@ -18,8 +19,6 @@ interface ProjectOption {
     name: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-
 export default function PolygonUpload() {
     const [file, setFile] = useState<File | null>(null);
     const [areaType, setAreaType] = useState("restoration");
@@ -35,13 +34,15 @@ export default function PolygonUpload() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch(`${API_URL}/api/v1/projects/`)
-            .then(res => res.json())
-            .then(data => {
-                setProjects(data);
-                if (data.length > 0) setProjectId(data[0].id);
-            })
-            .catch(() => { });
+        const supabase = createClient();
+        supabase.from('projects').select('id, name').order('name')
+            .then(({ data, error }) => {
+                if (!error) {
+                    const list = data ?? [];
+                    setProjects(list);
+                    if (list.length > 0) setProjectId(list[0].id);
+                }
+            });
     }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,8 +64,8 @@ export default function PolygonUpload() {
         }
 
         const fileName = file.name.toLowerCase();
-        if (!fileName.endsWith(".geojson") && !fileName.endsWith(".json") && !fileName.endsWith(".kml") && !fileName.endsWith(".tif") && !fileName.endsWith(".tiff")) {
-            setError("Only .geojson, .json, .kml, and .tif(f) files are supported.");
+        if (!fileName.endsWith(".geojson") && !fileName.endsWith(".json")) {
+            setError("Only .geojson / .json files are supported for direct upload.");
             return;
         }
 
@@ -72,25 +73,31 @@ export default function PolygonUpload() {
         setError(null);
         setUploadResult(null);
 
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("area_type", areaType);
-        formData.append("project_id", projectId);
-
         try {
-            const res = await fetch(`${API_URL}/api/v1/uploads/spatial`, {
-                method: "POST",
-                body: formData,
-            });
+            const text = await file.text();
+            const geojson = JSON.parse(text);
 
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.detail || "Upload failed");
+            if (geojson.type !== "FeatureCollection") {
+                throw new Error("File is not a valid GeoJSON FeatureCollection");
             }
 
-            const data = await res.json();
+            const features = geojson.features ?? [];
+            if (features.length === 0) {
+                throw new Error("No features found in the uploaded file");
+            }
+
+            const supabase = createClient();
+            const { data, error: rpcError } = await supabase.rpc('insert_project_area_geojson', {
+                p_features: features,
+                p_area_type: areaType,
+                p_project_id: projectId,
+                p_filename: file.name,
+            });
+
+            if (rpcError) throw new Error(rpcError.message || "Upload failed");
+
             setUploadResult({
-                message: data.message,
+                message: "File ingested successfully",
                 feature_count: data.feature_count,
                 inserted_count: data.inserted_count,
                 skipped_count: data.skipped_count,
@@ -156,12 +163,12 @@ export default function PolygonUpload() {
                             <p className="mb-2 text-sm text-slate-400">
                                 <span className="font-semibold text-emerald-500">Click to upload</span> or drag and drop
                             </p>
-                            <p className="text-xs text-slate-500">GeoJSON, KML, or TIFF (MAX. 50MB)</p>
+                            <p className="text-xs text-slate-500">GeoJSON only (MAX. 50MB)</p>
                         </div>
                         <input
                             type="file"
                             className="hidden"
-                            accept=".geojson,.json,.kml,.tif,.tiff,application/geo+json,application/json,application/vnd.google-earth.kml+xml,image/tiff"
+                            accept=".geojson,.json,application/geo+json,application/json"
                             onChange={handleFileChange}
                         />
                     </label>
@@ -204,3 +211,4 @@ export default function PolygonUpload() {
         </div>
     );
 }
+

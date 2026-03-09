@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { ChevronDown, Globe } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 interface ProjectOption {
     id: string;
     name: string;
     region: string;
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 interface ProjectFilterProps {
     selectedProjectId: string;
@@ -56,13 +55,12 @@ export function useProjects() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`${API_URL}/api/v1/projects/`)
-            .then((res) => res.json())
-            .then((data) => {
-                setProjects(data);
+        const supabase = createClient();
+        supabase.from('projects').select('id, name, region').order('name')
+            .then(({ data, error }) => {
+                if (!error) setProjects(data ?? []);
                 setLoading(false);
-            })
-            .catch(() => setLoading(false));
+            });
     }, []);
 
     return { projects, selectedProjectId, setSelectedProjectId, loading };
