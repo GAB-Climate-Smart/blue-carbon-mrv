@@ -60,8 +60,7 @@ export function useProjects() {
             .then((data) => {
                 setProjects(data);
                 setLoading(false);
-            })
-            .catch(() => setLoading(false));
+            });
     }, []);
 
     return { projects, selectedProjectId, setSelectedProjectId, loading };

@@ -19,11 +19,11 @@ async function getGovernanceData() {
             fetch(`${API_BASE_URL}/api/v1/governance/classification-runs?limit=50`, { cache: "no-store", headers: { cookie: cookieHeader } })
         ]);
 
-        const projects = projectsRes.ok ? await projectsRes.json() : [];
-        const jobs = jobsRes.ok ? await jobsRes.json() : [];
-        const runs = runsRes.ok ? await runsRes.json() : [];
-
-        return { projects, jobs, runs };
+        return {
+            projects: projects ?? [],
+            jobs: jobs ?? [],
+            runs: runs ?? [],
+        };
     } catch (error) {
         console.error("Error fetching governance data:", error);
         return { projects: [], jobs: [], runs: [] };

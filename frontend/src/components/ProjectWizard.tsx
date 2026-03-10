@@ -91,19 +91,16 @@ export default function ProjectWizard() {
                 body: JSON.stringify({
                     name: projectName,
                     region,
-                    district,
+                    district: district || null,
                     project_types: selectedProjectTypes,
                     start_date: startDate || null,
                     description: description || null,
-                }),
-            });
+                })
+                .select('id')
+                .single();
 
-            if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(errData.detail || "Failed to create project");
-            }
+            if (error) throw new Error(error.message || "Failed to create project");
 
-            const data = await res.json();
             setCreatedProjectId(data.id);
             setStep(2);
         } catch (err: any) {
@@ -123,6 +120,12 @@ export default function ProjectWizard() {
             return;
         }
 
+        const fileName = file.name.toLowerCase();
+        if (!fileName.endsWith(".geojson") && !fileName.endsWith(".json")) {
+            setError("Only .geojson / .json files are supported for direct upload.");
+            return;
+        }
+
         setIsUploading(true);
         setError(null);
 
@@ -137,12 +140,21 @@ export default function ProjectWizard() {
                 body: formData,
             });
 
-            if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(errData.detail || "Upload failed");
+            const features = geojson.features ?? [];
+            if (features.length === 0) {
+                throw new Error("No features found in the uploaded file");
             }
 
-            const data = await res.json();
+            const supabase = createClient();
+            const { data, error } = await supabase.rpc('insert_project_area_geojson', {
+                p_features: features,
+                p_area_type: areaType,
+                p_project_id: createdProjectId,
+                p_filename: file.name,
+            });
+
+            if (error) throw new Error(error.message || "Upload failed");
+
             setUploadedLayers(prev => [
                 ...prev,
                 { type: areaType, filename: file.name, count: data.inserted_count },
