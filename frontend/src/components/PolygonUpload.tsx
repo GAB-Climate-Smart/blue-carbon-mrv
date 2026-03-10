@@ -28,6 +28,22 @@ type UploadResult = {
     skipped_count?: number;
 };
 
+const AREA_TYPE_OPTIONS = [
+    { value: "restoration", label: "Restoration" },
+    { value: "conservation", label: "Conservation" },
+    { value: "protection", label: "Protection" },
+    { value: "buffer", label: "Buffer Zone" },
+    { value: "reference", label: "Reference Area" },
+];
+
+type UploadResult = {
+    message: string;
+    ingestion_job_id?: string;
+    feature_count?: number;
+    inserted_count?: number;
+    skipped_count?: number;
+};
+
 export default function PolygonUpload() {
     const [file, setFile] = useState<File | null>(null);
     const [areaType, setAreaType] = useState("restoration");

@@ -9,6 +9,8 @@ import os
 
 from app.db.database import get_db
 
+from app.db.database import get_db
+
 router = APIRouter()
 
 VALID_AREA_TYPES = {
