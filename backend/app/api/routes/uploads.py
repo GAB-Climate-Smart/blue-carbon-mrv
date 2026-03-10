@@ -4,12 +4,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 import hashlib
 import json
+import tempfile
+import os
+
+from app.db.database import get_db
 
 from app.db.database import get_db
 
 router = APIRouter()
 
-VALID_AREA_TYPES = {"restoration", "conservation", "protection", "buffer", "reference"}
+VALID_AREA_TYPES = {
+    "restoration", "conservation", "protection", "buffer", "reference",
+    "hydrology", "mangrove_extent", "project_boundary"
+}
 
 
 @router.post("/spatial")
@@ -18,13 +25,23 @@ async def upload_spatial_file(
     area_type: str = Form("restoration"),
     coastal_area_name: str | None = Form(None),
     district_name: str | None = Form(None),
+    project_id: str | None = Form(None),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Ingest GeoJSON polygons into project_areas and track ingestion with an ingestion_job.
+    Supports GeoJSON, KML, and TIFF (GeoTIFF) file formats.
     """
-    if not file.filename or (not file.filename.endswith(".geojson") and not file.filename.endswith(".json")):
-        raise HTTPException(status_code=400, detail="Only .geojson files are supported")
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file uploaded")
+
+    filename = file.filename.lower()
+    is_geojson = filename.endswith(".geojson") or filename.endswith(".json")
+    is_kml = filename.endswith(".kml")
+    is_tiff = filename.endswith(".tif") or filename.endswith(".tiff")
+
+    if not (is_geojson or is_kml or is_tiff):
+        raise HTTPException(status_code=400, detail="Only .geojson, .kml, and .tif(f) files are supported")
 
     normalized_area_type = area_type.strip().lower()
     if normalized_area_type not in VALID_AREA_TYPES:
@@ -78,13 +95,64 @@ async def upload_spatial_file(
     job_id = str(job_insert.scalar_one())
 
     try:
-        data = json.loads(content)
-        if data.get("type") != "FeatureCollection":
-            raise ValueError("File is not a valid GeoJSON FeatureCollection")
+        features = []
 
-        features = data.get("features", [])
+        if is_geojson:
+            data = json.loads(content)
+            if data.get("type") != "FeatureCollection":
+                raise ValueError("File is not a valid GeoJSON FeatureCollection")
+            features = data.get("features", [])
+
+        elif is_kml:
+            import geopandas as gpd
+            import fiona
+            fiona.drvsupport.supported_drivers['KML'] = 'rw'
+
+            with tempfile.NamedTemporaryFile(suffix=".kml", delete=False) as tmp:
+                tmp.write(content)
+                tmp_path = tmp.name
+
+            try:
+                gdf = gpd.read_file(tmp_path, driver='KML')
+                if gdf.crs is not None and gdf.crs.to_epsg() != 4326:
+                    gdf = gdf.to_crs(epsg=4326)
+                geojson_str = gdf.to_json()
+                data = json.loads(geojson_str)
+                features = data.get("features", [])
+            finally:
+                os.unlink(tmp_path)
+
+        elif is_tiff:
+            import rasterio
+            from rasterio.features import shapes
+
+            with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as tmp:
+                tmp.write(content)
+                tmp_path = tmp.name
+
+            try:
+                with rasterio.open(tmp_path) as src:
+                    image = src.read(1)
+                    mask = (image > 0) & (src.read_masks(1) > 0)
+                    src_crs = src.crs
+
+                    features_extracted = []
+                    for geom, val in shapes(image, mask=mask, transform=src.transform):
+                        features_extracted.append({"type": "Feature", "geometry": geom, "properties": {"value": val}})
+
+                    if src_crs and src_crs.to_epsg() != 4326:
+                        import geopandas as gpd
+                        gdf = gpd.GeoDataFrame.from_features(features_extracted, crs=src_crs)
+                        gdf = gdf.to_crs(epsg=4326)
+                        data = json.loads(gdf.to_json())
+                        features = data.get("features", [])
+                    else:
+                        features = features_extracted
+            finally:
+                os.unlink(tmp_path)
+
         if not features:
-            raise ValueError("No features found in uploaded file")
+            raise ValueError("No valid features found in uploaded file")
 
         inserted_count = 0
         skipped_count = 0
@@ -120,20 +188,14 @@ async def upload_spatial_file(
             await db.execute(
                 text(
                     """
-                    INSERT INTO public.project_areas (
-                        area_name,
-                        area_type,
-                        source_file_name,
-                        area_ha,
-                        properties,
-                        geom
-                    )
+                    INSERT INTO public.project_areas (area_name, area_type, source_file_name, area_ha, properties, project_id, geom)
                     VALUES (
                         :area_name,
                         :area_type,
                         :source_file_name,
                         :area_ha,
                         CAST(:properties AS jsonb),
+                        CAST(:project_id AS uuid),
                         ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(:geometry_json), 4326))
                     )
                     """
@@ -144,6 +206,7 @@ async def upload_spatial_file(
                     "source_file_name": file.filename,
                     "area_ha": area_ha,
                     "properties": json.dumps(properties),
+                    "project_id": project_id if project_id else None,
                     "geometry_json": geometry_json,
                 },
             )
