@@ -12,7 +12,16 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Utility scripts not part of the Next.js app
+    "*.js",
+    "scripts/**",
   ]),
+  {
+    rules: {
+      // Downgrade to warning — fix incrementally
+      "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;

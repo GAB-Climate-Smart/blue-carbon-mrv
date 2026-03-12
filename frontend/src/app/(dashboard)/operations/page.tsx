@@ -19,6 +19,12 @@ async function getGovernanceData() {
             fetch(`${API_BASE_URL}/api/v1/governance/classification-runs?limit=50`, { cache: "no-store", headers: { cookie: cookieHeader } })
         ]);
 
+        const [projects, jobs, runs] = await Promise.all([
+            projectsRes.ok ? projectsRes.json() : [],
+            jobsRes.ok ? jobsRes.json() : [],
+            runsRes.ok ? runsRes.json() : [],
+        ]);
+
         return {
             projects: projects ?? [],
             jobs: jobs ?? [],
