@@ -95,16 +95,19 @@ export default function ProjectWizard() {
                     project_types: selectedProjectTypes,
                     start_date: startDate || null,
                     description: description || null,
-                })
-                .select('id')
-                .single();
+                }),
+            });
 
-            if (error) throw new Error(error.message || "Failed to create project");
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.detail || "Failed to create project");
+            }
 
+            const data = await res.json();
             setCreatedProjectId(data.id);
             setStep(2);
-        } catch (err: any) {
-            setError(err.message || "An error occurred.");
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "An error occurred.");
         } finally {
             setIsUploading(false);
         }
@@ -140,29 +143,20 @@ export default function ProjectWizard() {
                 body: formData,
             });
 
-            const features = geojson.features ?? [];
-            if (features.length === 0) {
-                throw new Error("No features found in the uploaded file");
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.detail || "Upload failed");
             }
 
-            const supabase = createClient();
-            const { data, error } = await supabase.rpc('insert_project_area_geojson', {
-                p_features: features,
-                p_area_type: areaType,
-                p_project_id: createdProjectId,
-                p_filename: file.name,
-            });
-
-            if (error) throw new Error(error.message || "Upload failed");
-
+            const data = await res.json();
             setUploadedLayers(prev => [
                 ...prev,
-                { type: areaType, filename: file.name, count: data.inserted_count },
+                { type: areaType, filename: file.name, count: data.feature_count ?? 0 },
             ]);
             setFile(null);
-            setAreaType("mangrove_extent"); // Default to next likely layer
-        } catch (err: any) {
-            setError(err.message || "An error occurred while uploading.");
+            setAreaType("mangrove_extent");
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "An error occurred while uploading.");
         } finally {
             setIsUploading(false);
         }

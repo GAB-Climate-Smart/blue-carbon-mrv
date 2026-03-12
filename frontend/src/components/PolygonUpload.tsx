@@ -28,21 +28,6 @@ type UploadResult = {
     skipped_count?: number;
 };
 
-const AREA_TYPE_OPTIONS = [
-    { value: "restoration", label: "Restoration" },
-    { value: "conservation", label: "Conservation" },
-    { value: "protection", label: "Protection" },
-    { value: "buffer", label: "Buffer Zone" },
-    { value: "reference", label: "Reference Area" },
-];
-
-type UploadResult = {
-    message: string;
-    ingestion_job_id?: string;
-    feature_count?: number;
-    inserted_count?: number;
-    skipped_count?: number;
-};
 
 export default function PolygonUpload() {
     const [file, setFile] = useState<File | null>(null);
@@ -110,23 +95,14 @@ export default function PolygonUpload() {
                 body: formData,
             });
 
-            const features = geojson.features ?? [];
-            if (features.length === 0) {
-                throw new Error("No features found in the uploaded file");
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.detail || "Upload failed");
             }
 
-            const supabase = createClient();
-            const { data, error: rpcError } = await supabase.rpc('insert_project_area_geojson', {
-                p_features: features,
-                p_area_type: areaType,
-                p_project_id: projectId,
-                p_filename: file.name,
-            });
-
-            if (rpcError) throw new Error(rpcError.message || "Upload failed");
-
+            const data = await res.json();
             setUploadResult({
-                message: data.message,
+                message: data.message ?? "Upload successful",
                 ingestion_job_id: data.ingestion_job_id,
                 feature_count: data.feature_count,
                 inserted_count: data.inserted_count,

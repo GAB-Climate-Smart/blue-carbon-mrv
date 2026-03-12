@@ -204,7 +204,7 @@ export default function ExportManager({ activeCycle, isGatewayUnlocked, projects
                 <ShieldAlert className="h-12 w-12 text-rose-500 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">Verification Gateway Locked</h3>
                 <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-xl mx-auto mb-6">
-                    The Registry Export packs cannot be downloaded because the <span className="font-semibold text-rose-600">"{activeCycle.name}"</span> audit cycle still has pending compliance requirements.
+                    The Registry Export packs cannot be downloaded because the <span className="font-semibold text-rose-600">&ldquo;{activeCycle.name}&rdquo;</span> audit cycle still has pending compliance requirements.
                 </p>
                 <Link
                     href="/compliance"
