@@ -19,8 +19,10 @@ export function Sidebar({ userRole = 'crema_agent' }: { userRole?: string }) {
         { name: "Safeguards", href: "/safeguards", icon: HeartHandshake },
         { name: "Compliance", href: "/compliance", icon: ShieldCheck },
         { name: "Registry & Exports", href: "/registry", icon: DownloadCloud },
+        { name: "Socio-Economic", href: "/socio-economic", icon: Users },
+        { name: "Environmental Pressure", href: "/pressure", icon: ShieldAlert },
         { name: "Database", href: "/database", icon: Database },
-        ...(userRole === 'admin' ? [{ name: "Users", href: "/users", icon: Users }] : []),
+        ...(userRole === 'admin' ? [{ name: "Users Admin", href: "/users", icon: Users }] : []),
         { name: "Settings", href: "/settings", icon: Settings },
         { name: "Operations & QA", href: "/operations", icon: Activity },
     ];

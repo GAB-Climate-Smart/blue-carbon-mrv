@@ -1,1 +1,24 @@
-/Library/Developer/CommandLineTools/usr/bin/python3: No module named uvicorn
+INFO:     Will watch for changes in these directories: ['/Users/danielnsowah/Desktop/blue-carbon-mrv/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [12293] using WatchFiles
+INFO:     Started server process [12355]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:52289 - "GET /api/v1/governance/ingestion-jobs HTTP/1.1" 200 OK
+Run time of job "Weekly Satellite Vegetation Index Scan (trigger: cron[day_of_week='mon', hour='2', minute='0'], next run at: 2026-03-16 02:00:00 GMT)" was missed by 0:12:28.671999
+WARNING:  WatchFiles detected changes in 'print_env.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12355]
+INFO:     Started server process [95322]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'test_engine.py', 'scripts/seed_keta_mangrove.py', 'test_views.py', 'check_alerts.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [95322]
+INFO:     Started server process [95346]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.

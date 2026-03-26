@@ -1,7 +1,10 @@
 import { createClient } from "@/utils/supabase/server";
 import { format } from "date-fns";
-import { TreePine, Navigation, Activity, Calendar, User, FileText, CheckCircle2 } from "lucide-react";
+import { TreePine, Navigation, Activity, Calendar, User, FileText, CheckCircle2, Layout, Clock, AlertCircle } from "lucide-react";
+import { addYears, isAfter } from "date-fns";
 import MeasurementForm from "./MeasurementForm";
+import PlotGrowthChart from "./PlotGrowthChart";
+import ValidationActions from "./ValidationActions";
 
 export default async function PlotDetailsPage(props: { params: Promise<{ id: string }> }) {
     const params = await props.params;
@@ -10,7 +13,10 @@ export default async function PlotDetailsPage(props: { params: Promise<{ id: str
     // Fetch Plot Metadata
     const { data: plot, error: plotError } = await supabase
         .from("sample_plots")
-        .select(`*`)
+        .select(`
+            *,
+            projects ( name )
+        `)
         .eq("id", params.id)
         .single();
 
@@ -29,13 +35,31 @@ export default async function PlotDetailsPage(props: { params: Promise<{ id: str
         .from("plot_measurements")
         .select(`
             *,
-            profiles ( email )
+            profiles!recorded_by ( email ),
+            validator:profiles!validated_by ( email )
         `)
         .eq("plot_id", params.id)
         .order("measurement_date", { ascending: false });
 
+    // Calculate Next Measurement Due (2 years after last measurement or establishment)
+    const lastMeasDate = measurements && measurements.length > 0 
+        ? new Date(measurements[0].measurement_date) 
+        : new Date(plot.created_at);
+    const nextDueDate = addYears(lastMeasDate, 2);
+    const isOverdue = isAfter(new Date(), nextDueDate);
+
+    // Fetch Current User Role for Validation Buttons
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: userProfile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user?.id || '')
+        .single();
+    
+    const canValidate = ['admin', 'fc_analyst', 'wd_validator', 'mest_reviewer'].includes(userProfile?.role || '');
+
     // Fetch Soil Samples
-    const { data: soilSamples, error: soilError } = await supabase
+    const { data: soilSamples } = await supabase
         .from("soil_samples")
         .select("*")
         .eq("plot_id", params.id)
@@ -78,14 +102,32 @@ export default async function PlotDetailsPage(props: { params: Promise<{ id: str
                             </div>
                             <div className="flex items-center justify-between p-3 bg-slate-950 rounded-lg border border-slate-800/50">
                                 <span className="text-sm text-slate-400 flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-slate-500" /> Established
+                                    <Layout className="w-4 h-4 text-slate-500" /> Project
                                 </span>
-                                <span className="text-sm font-medium text-white">
-                                    {format(new Date(plot.created_at), "MMM d, yyyy")}
+                                <span className="text-sm font-medium text-emerald-400">
+                                    {plot.projects?.name || "Unassigned"}
                                 </span>
+                            </div>
+                            <div className="flex items-center justify-between p-3 bg-slate-950 rounded-lg border border-slate-800/50">
+                                <span className="text-sm text-slate-400 flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-slate-500" /> Next Due
+                                </span>
+                                <div className="text-right">
+                                    <div className={`text-sm font-medium ${isOverdue ? 'text-rose-400' : 'text-white'}`}>
+                                        {format(nextDueDate, "MMM d, yyyy")}
+                                    </div>
+                                    {isOverdue && (
+                                        <div className="text-[10px] text-rose-500 flex items-center gap-1 justify-end">
+                                            <AlertCircle className="w-3 h-3" /> Overdue
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    {/* Growth Chart */}
+                    <PlotGrowthChart data={measurements || []} />
 
                     {/* Soil Samples Card */}
                     <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
@@ -161,6 +203,13 @@ export default async function PlotDetailsPage(props: { params: Promise<{ id: str
                                                             QA Survey
                                                         </span>
                                                     )}
+                                                    <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border ${
+                                                        measurement.validation_status === 'Approved' ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' :
+                                                        measurement.validation_status === 'Rejected' ? 'text-rose-500 bg-rose-500/10 border-rose-500/20' :
+                                                        'text-slate-500 bg-slate-500/10 border-slate-500/20'
+                                                    }`}>
+                                                        {measurement.validation_status}
+                                                    </span>
                                                 </div>
                                             </div>
 
@@ -186,9 +235,23 @@ export default async function PlotDetailsPage(props: { params: Promise<{ id: str
                                                 </div>
                                             )}
 
-                                            <div className="mt-4 flex items-center gap-2 text-xs text-slate-500 pt-3 border-t border-slate-800/50">
-                                                <User className="w-3.5 h-3.5" />
-                                                {measurement.profiles?.email || "Unknown Agent"}
+                                            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-800/50">
+                                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                    <User className="w-3.5 h-3.5" />
+                                                    {measurement.profiles?.email || "Unknown Agent"}
+                                                    {measurement.validator?.email && (
+                                                        <span className="flex items-center gap-1 text-emerald-500/70">
+                                                            • Validated by {measurement.validator.email}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                
+                                                {canValidate && (
+                                                    <ValidationActions 
+                                                        measurementId={measurement.id} 
+                                                        currentStatus={measurement.validation_status} 
+                                                    />
+                                                )}
                                             </div>
                                         </div>
                                     </div>

@@ -29,8 +29,12 @@ function assertValidUrl(value: string | undefined, name: string): string {
         );
     }
 
-    // Must start with https:// (Supabase always uses TLS)
-    if (!value.startsWith("https://")) {
+    // Must start with https:// (Supabase always uses TLS in production)
+    // Allow http:// for local development (127.0.0.1 or localhost)
+    const isLocal = value.includes("127.0.0.1") || value.includes("localhost");
+    const isProd = process.env.NODE_ENV === 'production';
+    
+    if (!value.startsWith("https://") && (!isLocal || isProd)) {
         throw new Error(
             `Environment variable "${name}" must start with "https://".\n` +
             `Current value starts with: "${value.slice(0, 20)}…"\n` +

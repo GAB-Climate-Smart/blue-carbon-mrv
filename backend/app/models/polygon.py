@@ -26,6 +26,9 @@ class Project(Base):
     alerts = relationship("SARChangeAlert", back_populates="project", lazy="selectin")
     leakage_zones = relationship("LeakageZone", back_populates="project", lazy="selectin")
     sample_plots = relationship("SamplePlot", back_populates="project", lazy="selectin")
+    socio_economic_observations = relationship("SocioEconomicObservation", back_populates="project", lazy="selectin")
+    environmental_pressure_observations = relationship("EnvironmentalPressureObservation", back_populates="project", lazy="selectin")
+    sample_plot_boundaries = relationship("SamplePlotBoundary", back_populates="project", lazy="selectin")
 
 
 class MangrovePlot(Base):
@@ -68,6 +71,8 @@ class SamplePlot(Base):
     created_at = Column(DateTime(timezone=True), server_default=text("timezone('utc'::text, now())"), nullable=False)
 
     project = relationship("Project", back_populates="sample_plots")
+    measurements = relationship("PlotMeasurement", back_populates="plot", lazy="selectin")
+    boundaries = relationship("SamplePlotBoundary", back_populates="plot", lazy="selectin")
 
 
 class SARChangeAlert(Base):

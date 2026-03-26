@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { Plus, X, Loader2, MapPin } from "lucide-react";
 
-export default function PlotRegistrationModal() {
+export default function PlotRegistrationModal({ projects = [] }: { projects?: any[] }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -23,6 +23,7 @@ export default function PlotRegistrationModal() {
             const plot_name = formData.get("plot_name") as string;
             const stratum = formData.get("stratum") as string;
             const status = formData.get("status") as string;
+            const project_id = formData.get("project_id") as string;
             const lat = parseFloat(formData.get("lat") as string);
             const lng = parseFloat(formData.get("lng") as string);
 
@@ -41,6 +42,7 @@ export default function PlotRegistrationModal() {
                     plot_name,
                     stratum,
                     status,
+                    project_id: project_id || null,
                     location: locationPoint, // Supabase REST API natively handles standard WKT string inserts for PostGIS columns!
                 })
                 .select()
@@ -97,8 +99,23 @@ export default function PlotRegistrationModal() {
 
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-300">Plot Code / Identifier</label>
+                                    <label htmlFor="p-reg-project" className="text-sm font-medium text-slate-300">Project Context</label>
+                                    <select
+                                        id="p-reg-project"
+                                        name="project_id"
+                                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                    >
+                                        <option value="">Select Project (Optional)</option>
+                                        {projects.map((p) => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label htmlFor="p-reg-name" className="text-sm font-medium text-slate-300">Plot Code / Identifier</label>
                                     <input
+                                        id="p-reg-name"
                                         type="text"
                                         name="plot_name"
                                         required

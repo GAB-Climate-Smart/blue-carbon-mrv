@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import os
-from app.api.routes import polygons, uploads, satellite, projects, governance
+from app.api.routes import polygons, uploads, satellite, projects, governance, indicators, psp
 from app.services.scheduler import start_scheduler, shutdown_scheduler
 
 @asynccontextmanager
@@ -34,6 +34,8 @@ app.include_router(uploads.router, prefix="/api/v1/uploads", tags=["Uploads"])
 app.include_router(satellite.router, prefix="/api/v1/satellite", tags=["Satellite Integration"])
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["Projects"])
 app.include_router(governance.router, prefix="/api/v1/governance", tags=["Governance"])
+app.include_router(indicators.router, prefix="/api/v1/indicators", tags=["Socio-Economic & Pressure Indicators"])
+app.include_router(psp.router, prefix="/api/v1/psp", tags=["Permanent Sample Plots"])
 
 @app.get("/")
 def read_root():
