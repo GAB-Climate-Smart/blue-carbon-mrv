@@ -56,7 +56,11 @@ export default function DashboardClient({
     }, [selectedProjectId, geoPlots, geoAlerts, geoLeakage, geoSamplePlots, geoProjectAreas, allAlerts, plots]);
 
     // Calculate KPIs
-    const totalArea = filtered.mangrovePlots.reduce((sum: number, p: any) => sum + Number(p.area_ha || 0), 0);
+    const isNational = selectedProjectId === "all";
+    const totalArea = isNational 
+        ? 30025.0 
+        : filtered.mangrovePlots.reduce((sum: number, p: any) => sum + Number(p.area_ha || 0), 0) +
+          filtered.projectAreas.reduce((sum: number, pa: any) => sum + Number(pa.area_ha || 0), 0);
     const totalAlerts = filtered.allProjectAlerts.length;
     const activeAlerts = filtered.allProjectAlerts.filter((a: any) => a.status !== 'Verified' && a.status !== 'False Positive').length;
     const verifiedAlerts = totalAlerts - activeAlerts;
@@ -65,10 +69,10 @@ export default function DashboardClient({
     const selectedProject = projects.find(p => p.id === selectedProjectId);
 
     const stats = [
-        { title: "Mangrove Extent (Ha)", value: totalArea.toLocaleString(undefined, { maximumFractionDigits: 1 }), change: "Live Sync", trend: "up", icon: TreePine },
-        { title: "Active Alerts", value: activeAlerts.toString(), change: "Action needed", trend: activeAlerts > 0 ? "down" : "up", icon: AlertTriangle },
-        { title: "Verification Rate", value: `${verificationRate}%`, change: "Overall", trend: "neutral", icon: ShieldCheck },
-        { title: "Projects", value: projects.length.toString(), change: selectedProjectId === "all" ? "National" : "Selected", trend: "neutral", icon: Globe },
+        { title: "Mangrove Extent (Ha)", value: totalArea.toLocaleString(undefined, { maximumFractionDigits: 1 }), change: isNational ? "National Baseline" : "Project Sync", trend: "neutral", icon: TreePine },
+        { title: "Estimated Carbon (tCO2e)", value: isNational ? "Pending TSPs" : "Pending PSPs", change: isNational ? "Carbon Inventory Team" : "Project Baselines", trend: "neutral", icon: Activity },
+        { title: "Active Map Alerts", value: activeAlerts.toString(), change: "Action needed", trend: activeAlerts > 0 ? "down" : "neutral", icon: AlertTriangle },
+        { title: "Jurisdictional Projects", value: projects.length.toString(), change: isNational ? "National Frame" : "Pilot Mode", trend: "neutral", icon: Globe },
     ];
 
     return (
