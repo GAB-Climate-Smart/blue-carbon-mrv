@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { UploadCloud, CheckCircle2, Loader2, X, MapPin, Calendar, Globe, Map as MapIcon, ArrowRight, ArrowLeft, AlertCircle, Layers, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { API_BASE_URL } from "@/lib/api";
+import { createClient } from "@/utils/supabase/client";
 
 const AREA_TYPE_OPTIONS = [
     { value: "project_boundary", label: "Project Boundary (outermost perimeter)" },
@@ -52,10 +52,12 @@ export default function ProjectWizard() {
     const [existingProjects, setExistingProjects] = useState<ProjectOption[]>([]);
 
     useEffect(() => {
-        fetch(`${API_BASE_URL}/api/v1/projects/`)
-            .then(res => res.json())
-            .then(data => setExistingProjects(data))
-            .catch(() => { });
+        const fetchProjects = async () => {
+            const supabase = createClient();
+            const { data } = await supabase.from('projects').select('id, name');
+            if (data) setExistingProjects(data);
+        };
+        fetchProjects();
     }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,25 +87,20 @@ export default function ProjectWizard() {
         setError(null);
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/projects/`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: projectName,
-                    region,
-                    district: district || null,
-                    project_types: selectedProjectTypes,
-                    start_date: startDate || null,
-                    description: description || null,
-                }),
-            });
+            const supabase = createClient();
+            const { data, error: insertError } = await supabase.from('projects').insert({
+                name: projectName,
+                region,
+                district: district || null,
+                project_types: selectedProjectTypes,
+                start_date: startDate || null,
+                description: description || null,
+            }).select().single();
 
-            if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(errData.detail || "Failed to create project");
+            if (insertError || !data) {
+                throw new Error(insertError?.message || "Failed to create project");
             }
 
-            const data = await res.json();
             setCreatedProjectId(data.id);
             setStep(2);
         } catch (err: unknown) {
@@ -133,30 +130,40 @@ export default function ProjectWizard() {
         setError(null);
 
         try {
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("area_type", areaType);
-            formData.append("project_id", createdProjectId);
+            const supabase = createClient();
+            const fileText = await file.text();
+            const parsed = JSON.parse(fileText);
+            
+            let featureCount = 0;
+            const features = parsed.features || (parsed.type === 'FeatureCollection' ? parsed.features : [parsed]);
 
-            const res = await fetch(`${API_BASE_URL}/api/v1/uploads/spatial`, {
-                method: "POST",
-                body: formData,
-            });
+            for (const feature of features) {
+                if (!feature || !feature.geometry) continue;
+                let geom = feature.geometry;
+                if (geom.type === 'Polygon') {
+                    geom = { type: 'MultiPolygon', coordinates: [geom.coordinates] };
+                } else if (geom.type !== 'MultiPolygon') {
+                    continue; // Skip points and lines
+                }
 
-            if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(errData.detail || "Upload failed");
+                const { error: geomErr } = await supabase.from('project_areas').insert({
+                    project_id: createdProjectId,
+                    area_name: `${file.name.replace(/\.[^/.]+$/, "")} - ${featureCount + 1}`,
+                    area_type: areaType,
+                    geom: geom,
+                });
+                if (geomErr) throw new Error(geomErr.message);
+                featureCount++;
             }
 
-            const data = await res.json();
             setUploadedLayers(prev => [
                 ...prev,
-                { type: areaType, filename: file.name, count: data.feature_count ?? 0 },
+                { type: areaType, filename: file.name, count: featureCount },
             ]);
             setFile(null);
             setAreaType("mangrove_extent");
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "An error occurred while uploading.");
+            setError(err instanceof Error ? err.message : "An error occurred while uploading. Please ensure file is valid GeoJSON.");
         } finally {
             setIsUploading(false);
         }
